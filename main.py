@@ -64,7 +64,7 @@ def get_domain_info():
     if domain_query[0] == '1':
         return domain_name
     elif domain_query[0] == '2':
-        domain_name = input("\nType the domain(i.e: google.com): ").strip()
+        domain_name = input("\nType the domain(e.g: google.com): ").strip()
 
         return domain_name
     else:
