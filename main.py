@@ -71,13 +71,38 @@ def get_domain_info():
         print("Please select a valid option.")
 
 
+def get_db_path_info():
+    db_path_select_method = input(
+        "Choose database path:\n1) Automatic\n2) Manual\n").strip()
+    if db_path_select_method == '1':
+        for i in range(15):
+            try:
+                db_path = os.path.join(os.environ["USERPROFILE"], "AppData", "Local",
+                                       "Google", "Chrome", "User Data", f"Profile {i}", "Network", "Cookies")
+                if os.path.exists(db_path):
+                    print("Found database path.")
+                    break
+            except:
+                pass
+        if not db_path:
+            raise Exception("Database path not found.")
+        return db_path
+
+    elif db_path_select_method == '2':
+        return input("Type the full directory of your database(including db file).\n")
+
+
 def main():
+
     # local sqlite Chrome cookie database path
-    db_path = os.path.join(os.environ["USERPROFILE"], "AppData", "Local",
-                           "Google", "Chrome", "User Data", "Profile 5", "Network", "Cookies")
+    db_path = get_db_path_info()
+
     # copy the file to current directory
     # as the database will be locked if chrome is currently open
     filename = "Cookies.db"
+    # start output file
+    with open(f"{filename}.json", "w") as file:
+        file.write("[")
     if not os.path.isfile(filename):
         # copy file when does not exist in the current directory
         shutil.copyfile(db_path, filename)
@@ -120,21 +145,28 @@ def main():
         WHERE host_key = ?
         AND name = ?""", (decrypted_value, host_key, name))
         dictData = {
-            'Host: ': host_key,
-            'Cookie name: ': {name},
-            'Cookie value (decrypted): ': {decrypted_value},
-            'Creation datetime (UTC): ': {get_chrome_datetime(creation_utc)},
-            'Last access datetime (UTC): ': {get_chrome_datetime(last_access_utc)},
-            'Expires datetime (UTC): ': {get_chrome_datetime(expires_utc)}
+            'Host': host_key,
+            'Cookie name': name,
+            'Cookie value (decrypted)': decrypted_value,
+            'Creation datetime (UTC)': get_chrome_datetime(creation_utc),
+            'Last access datetime (UTC)': get_chrome_datetime(last_access_utc),
+            'Expires datetime (UTC)': get_chrome_datetime(expires_utc)
         }
-        with open(f"{filename}.txt", "a") as file:
+        with open(f"{filename}.json", "a+") as file:
             file.write(json.dumps(str(dictData)))
-            file.write("\n\n")
+            file.write(",\n\n")
+    # remove last , of output file
+    with open(f"{filename}.json", 'rb+') as file:
+        file.seek(-5, 2)
+        file.truncate()
+    # close json output file
+    with open(f"{filename}.json", "a+") as file:
+        file.write("]")
     # commit changes
     db.commit()
     # close connection
     db.close()
-    print(f"File {filename[:-3]}.txt was saved in path {os.getcwd()}")
+    print(f"File {filename[:-3]}.json was saved in path {os.getcwd()}")
 
 
 if __name__ == "__main__":
